@@ -4,9 +4,47 @@ import numpy as np
 from PIL import Image
 
 
-def stitch_images(img1_path, img2_path, output_path, min_overlap=10):
+def find_vertical_overlap(arr1, arr2, min_overlap, threshold):
     """
-    Stitches two images together, automatically detecting overlap.
+    Finds the best vertical overlap with arr1 on top of arr2.
+    """
+    h1, w1, _ = arr1.shape
+    h2, w2, _ = arr2.shape
+    common_w = min(w1, w2)
+
+    for overlap in range(min(h1, h2) - 1, min_overlap - 1, -1):
+        slice1 = arr1[h1 - overlap:, :common_w, :]
+        slice2 = arr2[:overlap, :common_w, :]
+        diff = np.mean(np.abs(slice1.astype(float) - slice2.astype(float)))
+
+        if diff < threshold:
+            print(f"Found vertical overlap of {overlap} pixels with difference {diff:.2f}.")
+            return overlap
+    return 0
+
+
+def find_horizontal_overlap(arr1, arr2, min_overlap, threshold):
+    """
+    Finds the best horizontal overlap with arr1 to the left of arr2.
+    """
+    h1, w1, _ = arr1.shape
+    h2, w2, _ = arr2.shape
+    common_h = min(h1, h2)
+
+    for overlap in range(min(w1, w2) - 1, min_overlap - 1, -1):
+        slice1 = arr1[:common_h, w1 - overlap:, :]
+        slice2 = arr2[:common_h, :overlap, :]
+        diff = np.mean(np.abs(slice1.astype(float) - slice2.astype(float)))
+
+        if diff < threshold:
+            print(f"Found horizontal overlap of {overlap} pixels with difference {diff:.2f}.")
+            return overlap
+    return 0
+
+
+def stitch_images(img1_path, img2_path, output_path, direction, min_overlap=20, threshold=10.0):
+    """
+    Stitches two images together in a specified direction.
     """
     try:
         img1 = Image.open(img1_path).convert('RGB')
@@ -18,95 +56,57 @@ def stitch_images(img1_path, img2_path, output_path, min_overlap=10):
     arr1 = np.array(img1)
     arr2 = np.array(img2)
 
-    h1, w1, _ = arr1.shape
-    h2, w2, _ = arr2.shape
+    if direction == 'vertical':
+        overlap = find_vertical_overlap(arr1, arr2, min_overlap, threshold)
+        if not overlap:
+            print("Could not find a suitable vertical overlap.")
+            return
 
-    # --- 1. Attempt Vertical Stitching with Similarity Matching ---
-    print("Attempting vertical stitch using similarity matching...")
-    common_w = min(w1, w2)
-    best_v_diff = float('inf')
-    best_v_overlap = -1
-
-    for overlap in range(min(h1, h2) - 1, min_overlap, -1):
-        slice1 = arr1[h1 - overlap:, :common_w, :]
-        slice2 = arr2[:overlap, :common_w, :]
-
-        # Use Mean Absolute Difference for similarity
-        diff = np.mean(np.abs(slice1.astype(float) - slice2.astype(float)))
-
-        if diff < best_v_diff:
-            best_v_diff = diff
-            best_v_overlap = overlap
-
-    # Check if the best match is good enough (threshold is empirical)
-    # Allows for an average difference of 2 (out of 255) per color channel
-    V_THRESHOLD = 2.0
-    if best_v_diff < V_THRESHOLD:
-        print(
-            f"Found best vertical match with difference {best_v_diff:.2f} at overlap {best_v_overlap} pixels.")
-
+        h1, w1, _ = arr1.shape
+        h2, w2, _ = arr2.shape
+        new_h = h1 + h2 - overlap
         new_w = max(w1, w2)
-        new_h = h1 + h2 - best_v_overlap
         new_arr = np.full((new_h, new_w, 3), 255, dtype=np.uint8)
 
         new_arr[:h1, :w1, :] = arr1
-        new_arr[h1:, :w2, :] = arr2[best_v_overlap:, :, :]
+        new_arr[h1 - overlap:h1 - overlap + h2, :w2, :] = arr2
 
         new_img = Image.fromarray(new_arr)
         new_img.save(output_path)
-        print(
-            f"Successfully stitched images vertically. Saved to {output_path}")
-        return
-    else:
-        print(
-            f"Vertical stitch failed. Best match difference was {best_v_diff:.2f} (threshold: {V_THRESHOLD})")
+        print(f"Successfully stitched images vertically. Saved to {output_path}")
 
-    # --- 2. Attempt Horizontal Stitching with Similarity Matching ---
-    print("Attempting horizontal stitch using similarity matching...")
-    common_h = min(h1, h2)
-    best_h_diff = float('inf')
-    best_h_overlap = -1
+    elif direction == 'horizontal':
+        overlap = find_horizontal_overlap(arr1, arr2, min_overlap, threshold)
+        if not overlap:
+            print("Could not find a suitable horizontal overlap.")
+            return
 
-    for overlap in range(min(w1, w2) - 1, min_overlap, -1):
-        slice1 = arr1[:, w1 - overlap:, :][:common_h, :, :]
-        slice2 = arr2[:, :overlap, :][:common_h, :, :]
-
-        diff = np.mean(np.abs(slice1.astype(float) - slice2.astype(float)))
-
-        if diff < best_h_diff:
-            best_h_diff = diff
-            best_h_overlap = overlap
-
-    # Check if the best match is good enough
-    H_THRESHOLD = 2.0
-    if best_h_diff < H_THRESHOLD:
-        print(
-            f"Found best horizontal match with difference {best_h_diff:.2f} at overlap {best_h_overlap} pixels.")
-
-        new_w = w1 + w2 - best_h_overlap
+        h1, w1, _ = arr1.shape
+        h2, w2, _ = arr2.shape
+        new_w = w1 + w2 - overlap
         new_h = max(h1, h2)
         new_arr = np.full((new_h, new_w, 3), 255, dtype=np.uint8)
 
         new_arr[:h1, :w1, :] = arr1
-        new_arr[:h2, w1:, :] = arr2[:, best_h_overlap:, :]
+        new_arr[:h2, w1 - overlap:w1 - overlap + w2, :] = arr2
 
         new_img = Image.fromarray(new_arr)
         new_img.save(output_path)
-        print(
-            f"Successfully stitched images horizontally. Saved to {output_path}")
-        return
-    else:
-        print(
-            f"Horizontal stitch failed. Best match difference was {best_h_diff:.2f} (threshold: {H_THRESHOLD})")
-
-    print("Could not find a suitable overlap to stitch the images.")
-    print("This tool requires a fairly clean overlap between the images.")
+        print(f"Successfully stitched images horizontally. Saved to {output_path}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5 or sys.argv[1] not in ['-v', '-h']:
         print("A tool to stitch two images with overlapping content.")
-        print("Usage: python stitch.py <image1_path> <image2_path> <output_path>")
+        print("Usage: python stitch.py <-v|-h> <image1_path> <image2_path> <output_path>")
+        print("  -v: Vertical stitch (image1 on top of image2)")
+        print("  -h: Horizontal stitch (image1 to the left of image2)")
         sys.exit(1)
 
-    stitch_images(sys.argv[1], sys.argv[2], sys.argv[3])
+    direction_flag = sys.argv[1]
+    direction = 'vertical' if direction_flag == '-v' else 'horizontal'
+    img1_path = sys.argv[2]
+    img2_path = sys.argv[3]
+    output_path = sys.argv[4]
+
+    stitch_images(img1_path, img2_path, output_path, direction)
