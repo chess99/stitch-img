@@ -9,16 +9,12 @@
 <body>
     <div class="container">
         <h1>Image Stitcher</h1>
-        <p>Select two images and choose a stitching direction.</p>
-        
+        <p>Select multiple images to stitch together. Drag to reorder.</p>
+
         <div class="controls">
-            <div class="file-input">
-                <label for="image1">Image 1</label>
-                <input type="file" id="image1" accept="image/*">
-            </div>
-            <div class="file-input">
-                <label for="image2">Image 2</label>
-                <input type="file" id="image2" accept="image/*">
+            <div class="file-input-wrapper">
+                <label for="image-input" class="button">Add Images</label>
+                <input type="file" id="image-input" accept="image/*" multiple>
             </div>
             <div class="direction-select">
                 <label for="direction">Direction</label>
@@ -27,8 +23,11 @@
                     <option value="vertical">Vertical</option>
                 </select>
             </div>
-            <button id="stitch-btn">Stitch Images</button>
         </div>
+
+        <div id="preview-area"></div>
+
+        <button id="stitch-btn">Stitch Images</button>
         
         <div class="result">
             <h2>Result</h2>
