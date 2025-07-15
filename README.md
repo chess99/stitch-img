@@ -1,45 +1,50 @@
 # Image Stitching Tool
 
-A simple command-line tool to stitch two images together, either vertically or horizontally. The script automatically finds the overlapping region between the two images and merges them.
+A command-line tool to automatically stitch multiple images together using OpenCV. The script analyzes the images, finds matching features, and merges them into a single panoramic or composite image.
+
+## Features
+
+- **Automatic Stitching**: No need to specify the orientation (horizontal/vertical).
+- **Multiple Images**: Stitch more than two images at once.
+- **Black Border Cropping**: Automatically crops black borders that result from the stitching process.
 
 ## Installation
 
-Install the required Python libraries:
+This project uses Python and requires OpenCV.
 
-```bash
-pip install -r requirements.txt
-```
+1. **Install Dependencies**:
+    It's recommended to use a virtual environment. The dependencies are listed in `requirements.txt`.
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+    > **Note for macOS (Apple Silicon) users**: If `pip` fails to install `opencv-python`, it is often more reliable to install it using Conda from the `conda-forge` channel:
+    > `conda install -c conda-forge opencv`
 
 ## Usage
 
-The script requires you to specify the stitching direction (`-v` for vertical or `-h` for horizontal), followed by the two input image paths and the desired output path.
+The script requires you to specify an output file with `-o` and provide at least two input images.
 
 ```bash
-python stitch.py <-v|-h> <image1_path> <image2_path> <output_path>
+python stitch.py -o <output_path> <image1_path> <image2_path> ...
 ```
 
 ### Arguments
 
-- `-v`: Vertical stitch. Places the first image on top of the second.
-- `-h`: Horizontal stitch. Places the first image to the left of the second.
-- `image1_path`: Path to the first image.
-- `image2_path`: Path to the second image.
-- `output_path`: Path to save the resulting stitched image.
+- `-o, --output`: Path to save the resulting stitched image. (Required)
+- `images`: One or more paths to the input images to be stitched.
 
-### Examples
+### Example
 
-**Vertical Stitch**
-
-This will place `in-1.png` above `in-2.png`.
+This command will stitch `in-1.png` and `in-2.png` together and save the result as `out.png`.
 
 ```bash
-python stitch.py -v in-1.png in-2.png out.png
+python stitch.py -o out.png in-1.png in-2.png
 ```
 
-**Horizontal Stitch**
-
-This will place `in-1.png` to the left of `in-2.png`.
+You can also provide more than two images:
 
 ```bash
-python stitch.py -h in-1.png in-2.png out.png
+python stitch.py -o panorama.jpg image1.png image2.png image3.png image4.png
 ```

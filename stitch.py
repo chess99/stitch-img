@@ -1,112 +1,90 @@
 import sys
+import cv2
+import argparse
 
-import numpy as np
-from PIL import Image
+def main():
+    parser = argparse.ArgumentParser(
+        description="Stitch multiple images together automatically.",
+        epilog="Example: python stitch.py -o stitched_image.png input1.png input2.png"
+    )
+    parser.add_argument(
+        '-o', '--output',
+        required=True,
+        help="Path to save the resulting stitched image."
+    )
+    parser.add_argument(
+        'images',
+        nargs='+',
+        help="Paths to the input images to stitch (at least two are required)."
+    )
 
+    args = parser.parse_args()
 
-def find_vertical_overlap(arr1, arr2, min_overlap, threshold):
-    """
-    Finds the best vertical overlap with arr1 on top of arr2.
-    """
-    h1, w1, _ = arr1.shape
-    h2, w2, _ = arr2.shape
-    common_w = min(w1, w2)
+    if len(args.images) < 2:
+        print("Error: At least two input images are required for stitching.", file=sys.stderr)
+        sys.exit(1)
 
-    for overlap in range(min(h1, h2) - 1, min_overlap - 1, -1):
-        slice1 = arr1[h1 - overlap:, :common_w, :]
-        slice2 = arr2[:overlap, :common_w, :]
-        diff = np.mean(np.abs(slice1.astype(float) - slice2.astype(float)))
-
-        if diff < threshold:
-            print(f"Found vertical overlap of {overlap} pixels with difference {diff:.2f}.")
-            return overlap
-    return 0
-
-
-def find_horizontal_overlap(arr1, arr2, min_overlap, threshold):
-    """
-    Finds the best horizontal overlap with arr1 to the left of arr2.
-    """
-    h1, w1, _ = arr1.shape
-    h2, w2, _ = arr2.shape
-    common_h = min(h1, h2)
-
-    for overlap in range(min(w1, w2) - 1, min_overlap - 1, -1):
-        slice1 = arr1[:common_h, w1 - overlap:, :]
-        slice2 = arr2[:common_h, :overlap, :]
-        diff = np.mean(np.abs(slice1.astype(float) - slice2.astype(float)))
-
-        if diff < threshold:
-            print(f"Found horizontal overlap of {overlap} pixels with difference {diff:.2f}.")
-            return overlap
-    return 0
-
-
-def stitch_images(img1_path, img2_path, output_path, direction, min_overlap=20, threshold=10.0):
-    """
-    Stitches two images together in a specified direction.
-    """
     try:
-        img1 = Image.open(img1_path).convert('RGB')
-        img2 = Image.open(img2_path).convert('RGB')
-    except FileNotFoundError as e:
-        print(f"Error: {e}. Please check the image paths.")
-        return
+        # Read images
+        images_data = []
+        for filename in args.images:
+            img = cv2.imread(filename)
+            if img is None:
+                print(f"Error: Cannot read image file: {filename}", file=sys.stderr)
+                sys.exit(1)
+            images_data.append(img)
 
-    arr1 = np.array(img1)
-    arr2 = np.array(img2)
+        # Create a stitcher object
+        stitcher = cv2.Stitcher_create()
+        
+        # Perform stitching
+        status, stitched_image = stitcher.stitch(images_data)
 
-    if direction == 'vertical':
-        overlap = find_vertical_overlap(arr1, arr2, min_overlap, threshold)
-        if not overlap:
-            print("Could not find a suitable vertical overlap.")
-            return
+        if status == cv2.Stitcher_OK:
+            # Crop the black borders from the stitched image
+            stitched_image = crop_black_borders(stitched_image)
+            
+            # Save the result
+            cv2.imwrite(args.output, stitched_image)
+            print(f"Stitched image saved to {args.output}")
+        else:
+            error_message = {
+                cv2.Stitcher_ERR_NEED_MORE_IMGS: "Need more images to stitch. Check image quality and overlap.",
+                cv2.Stitcher_ERR_HOMOGRAPHY_EST_FAIL: "Homography estimation failed. Ensure images have enough distinct features and overlap.",
+                cv2.Stitcher_ERR_CAMERA_PARAMS_ADJUST_FAIL: "Camera parameter adjustment failed."
+            }.get(status, f"An unknown stitching error occurred (Status code: {status})")
+            print(f"Error: {error_message}", file=sys.stderr)
+            sys.exit(1)
 
-        h1, w1, _ = arr1.shape
-        h2, w2, _ = arr2.shape
-        new_h = h1 + h2 - overlap
-        new_w = max(w1, w2)
-        new_arr = np.full((new_h, new_w, 3), 255, dtype=np.uint8)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
 
-        new_arr[:h1, :w1, :] = arr1
-        new_arr[h1 - overlap:h1 - overlap + h2, :w2, :] = arr2
+def crop_black_borders(image):
+    """
+    Crops the black borders from an image that are often left by stitching.
+    """
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Threshold the image to create a mask of non-black pixels
+    _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+    
+    # Find contours of the non-black regions
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if not contours:
+        # If no contours are found, it means the image is all black.
+        return image 
 
-        new_img = Image.fromarray(new_arr)
-        new_img.save(output_path)
-        print(f"Successfully stitched images vertically. Saved to {output_path}")
-
-    elif direction == 'horizontal':
-        overlap = find_horizontal_overlap(arr1, arr2, min_overlap, threshold)
-        if not overlap:
-            print("Could not find a suitable horizontal overlap.")
-            return
-
-        h1, w1, _ = arr1.shape
-        h2, w2, _ = arr2.shape
-        new_w = w1 + w2 - overlap
-        new_h = max(h1, h2)
-        new_arr = np.full((new_h, new_w, 3), 255, dtype=np.uint8)
-
-        new_arr[:h1, :w1, :] = arr1
-        new_arr[:h2, w1 - overlap:w1 - overlap + w2, :] = arr2
-
-        new_img = Image.fromarray(new_arr)
-        new_img.save(output_path)
-        print(f"Successfully stitched images horizontally. Saved to {output_path}")
+    # Find the bounding box of the largest contour
+    # We assume the largest contour corresponds to the main stitched area
+    largest_contour = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    
+    # Crop the image to this bounding box
+    return image[y:y+h, x:x+w]
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5 or sys.argv[1] not in ['-v', '-h']:
-        print("A tool to stitch two images with overlapping content.")
-        print("Usage: python stitch.py <-v|-h> <image1_path> <image2_path> <output_path>")
-        print("  -v: Vertical stitch (image1 on top of image2)")
-        print("  -h: Horizontal stitch (image1 to the left of image2)")
-        sys.exit(1)
-
-    direction_flag = sys.argv[1]
-    direction = 'vertical' if direction_flag == '-v' else 'horizontal'
-    img1_path = sys.argv[2]
-    img2_path = sys.argv[3]
-    output_path = sys.argv[4]
-
-    stitch_images(img1_path, img2_path, output_path, direction)
+    main()
