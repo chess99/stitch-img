@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Stitcher</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Image Stitcher</h1>
+        <p>Select two images and choose a stitching direction.</p>
+        
+        <div class="controls">
+            <div class="file-input">
+                <label for="image1">Image 1</label>
+                <input type="file" id="image1" accept="image/*">
+            </div>
+            <div class="file-input">
+                <label for="image2">Image 2</label>
+                <input type="file" id="image2" accept="image/*">
+            </div>
+            <div class="direction-select">
+                <label for="direction">Direction</label>
+                <select id="direction">
+                    <option value="horizontal" selected>Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                </select>
+            </div>
+            <button id="stitch-btn">Stitch Images</button>
+        </div>
+        
+        <div class="result">
+            <h2>Result</h2>
+            <div id="result-container">
+                <p id="placeholder">Your stitched image will appear here.</p>
+                <img id="result-img" alt="Stitched Image">
+            </div>
+            <a id="download-link" class="button" style="display: none;">Download Image</a>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

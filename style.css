@@ -1,0 +1,113 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f4f7f9;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background-color: #fff;
+    padding: 2rem 3rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+
+h1 {
+    color: #1a253c;
+    margin-bottom: 0.5rem;
+}
+
+p {
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.file-input, .direction-select {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-input label, .direction-select label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #444;
+}
+
+input[type="file"], select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fafafa;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+input[type="file"]:focus, select:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+button, .button {
+    display: inline-block;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+#stitch-btn {
+    grid-column: 1 / -1; /* Span across both columns */
+    width: 100%;
+}
+
+button:hover, .button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.result {
+    margin-top: 2rem;
+}
+
+#result-container {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+#result-img {
+    max-width: 100%;
+    max-height: 400px;
+    display: none; /* Initially hidden */
+}
+
+#placeholder {
+    color: #999;
+}
