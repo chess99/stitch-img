@@ -1,44 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Stitcher</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenCV Image Stitcher</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <div class="container">
-        <h1>Image Stitcher</h1>
-        <p>Select multiple images to stitch together. Drag to reorder.</p>
+      <h1>OpenCV Image Stitcher</h1>
+      <p>
+        Select two or more images and click Stitch. The algorithm will
+        automatically determine the best way to combine them.
+      </p>
 
-        <div class="controls">
-            <div class="file-input-wrapper">
-                <label for="image-input" class="button">Add Images</label>
-                <input type="file" id="image-input" accept="image/*" multiple>
-            </div>
-            <div class="direction-select">
-                <label for="direction">Direction</label>
-                <select id="direction">
-                    <option value="horizontal" selected>Horizontal</option>
-                    <option value="vertical">Vertical</option>
-                </select>
-            </div>
+      <div class="controls">
+        <div class="file-input-wrapper">
+          <label for="image-input" class="button">Add Images</label>
+          <input type="file" id="image-input" accept="image/*" multiple />
         </div>
+      </div>
 
-        <div id="preview-area"></div>
+      <div id="preview-area"></div>
 
-        <button id="stitch-btn">Stitch Images</button>
-        
-        <div class="result">
-            <h2>Result</h2>
-            <div id="result-container">
-                <p id="placeholder">Your stitched image will appear here.</p>
-                <img id="result-img" alt="Stitched Image">
-            </div>
-            <a id="download-link" class="button" style="display: none;">Download Image</a>
+      <button id="stitch-btn" disabled>Load OpenCV First</button>
+
+      <div class="result">
+        <h2>Result</h2>
+        <div id="result-container">
+          <p id="status">Loading OpenCV... (this may take a few seconds)</p>
+          <canvas id="result-canvas"></canvas>
         </div>
+        <a id="download-link" class="button" style="display: none"
+          >Download Image</a
+        >
+      </div>
     </div>
-    
+
+    <!-- 
+      Load the custom-built OpenCV.js from the local project directory.
+      This file must be built from source to include the 'stitching' module.
+      See /docs/building-opencvjs.md for instructions.
+    -->
+    <script
+      async
+      src="./opencv.js"
+      onload="onOpenCvReady();"
+      onerror="onOpenCvError();"
+    ></script>
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
